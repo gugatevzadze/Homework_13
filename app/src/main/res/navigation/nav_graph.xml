@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/fieldsFragment">
+
+    <fragment
+        android:id="@+id/fieldsFragment"
+        android:name="com.example.homework_13.FieldsFragment"
+        android:label="FieldsFragment" >
+        <action
+            android:id="@+id/action_fieldsFragment_to_inputtedFieldsFragment"
+            app:destination="@id/inputtedFieldsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/inputtedFieldsFragment"
+        android:name="com.example.homework_13.InputtedFieldsFragment"
+        android:label="fragment_inputted_fields"
+        tools:layout="@layout/fragment_inputted_fields" >
+    </fragment>
+</navigation>
