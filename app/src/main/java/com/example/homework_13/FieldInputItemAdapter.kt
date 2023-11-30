@@ -7,21 +7,20 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.homework_13.databinding.FieldInputItemBinding
 
-class FieldInputItemAdapter : ListAdapter<FieldInputs, FieldInputItemAdapter.YourViewHolder>(ItemDiffCallback()) {
+//adapter for displaying individual field inputs in a recyclerview
+class FieldInputItemAdapter : ListAdapter<FieldInputs, FieldInputItemAdapter.ItemViewHolder>(ItemDiffCallback()) {
+    inner class ItemViewHolder(val binding: FieldInputItemBinding) : RecyclerView.ViewHolder(binding.root)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): YourViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = FieldInputItemBinding.inflate(inflater, parent, false)
-        return YourViewHolder(binding)
+        return ItemViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: YourViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
         val item = getItem(position)
-        holder.bind(item)
-    }
 
-    inner class YourViewHolder(private val binding: FieldInputItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: FieldInputs) {
+        holder.apply {
             binding.fieldKey.text = item.fieldId
             binding.fieldValue.text = item.fieldValue
         }
