@@ -11,7 +11,7 @@ import com.example.homework_13.databinding.FieldInputContainerBinding
 //adapter for displaying the fields together in one section lets say
 class FieldInputContainerAdapter :
     ListAdapter<FieldInputsContainer, FieldInputContainerAdapter.ContainerViewHolder>(
-        ItemDiffCallback()
+        ContainerDiffCallback()
     ) {
 
     inner class ContainerViewHolder(val binding: FieldInputContainerBinding) :
@@ -35,7 +35,7 @@ class FieldInputContainerAdapter :
         holder.bind(item)
     }
 
-    private class ItemDiffCallback : DiffUtil.ItemCallback<FieldInputsContainer>() {
+    private class ContainerDiffCallback : DiffUtil.ItemCallback<FieldInputsContainer>() {
         override fun areItemsTheSame(
             oldItem: FieldInputsContainer,
             newItem: FieldInputsContainer

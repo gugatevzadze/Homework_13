@@ -104,7 +104,6 @@ class FieldsFragment : BaseFragment<FragmentFieldsBinding>(FragmentFieldsBinding
         fields: List<List<FieldsFromJson>>,
         data: MutableList<FieldInputs>
     ): Boolean {
-        // Validate each input field and handle required fields
         return fields.all { fieldList ->
             fieldList.all { field ->
                 when (val fieldView = binding.root.findViewWithTag<View>(field.field_id)) {
@@ -160,7 +159,6 @@ class FieldsFragment : BaseFragment<FragmentFieldsBinding>(FragmentFieldsBinding
 
     //assigning the input type
     private fun getInputType(keyboard: String?): Int {
-        // Determine the input type based on the keyboard type
         return when (keyboard) {
             "number" -> InputType.TYPE_CLASS_NUMBER
             else -> InputType.TYPE_CLASS_TEXT
