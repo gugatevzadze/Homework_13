@@ -1,187 +1,140 @@
 package com.example.homework_13
 
 import android.app.DatePickerDialog
-import android.os.Bundle
 import android.text.InputType
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.example.homework_13.databinding.FragmentFieldsBinding
 import java.util.Calendar
 
-class FieldsFragment : Fragment() {
-    private var _binding: FragmentFieldsBinding? = null
-    private val binding get() = _binding!!
+//used basefragment
+class FieldsFragment : BaseFragment<FragmentFieldsBinding>(FragmentFieldsBinding::inflate) {
 
     //viewmodel for communication between fragments
-    private val sharedViewModel: SharedViewModel by viewModels()
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentFieldsBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        //the parser object
+    override fun setUp() {
+        //parsing json to initialize fields
         val parserJson = ParserJson()
         val inputStream = resources.openRawResource(R.raw.data)
         val jsonString = inputStream.bufferedReader().use { it.readText() }
         val fields = parserJson.parseJson(jsonString)
 
-        //displaying parsed json data dynamically
-        fields.forEach { fieldList ->
-            fieldList.forEach { field ->
-                if (field.is_active) {
-                    when (field.field_type) {
-                        "input" -> {
-                            //creating edittext for "input" type fields
-                            val editText = EditText(context)
-                            editText.hint = field.hint
-                            editText.inputType = getInputType(field.keyboard)
-                            editText.tag = field.field_id
-                            binding.linearLayout.addView(editText)
-                        }
+        //displaying fields dynamically based on json
+        displayFieldsDynamically(fields)
 
-                        "chooser" -> {
-                            when (field.hint) {
-                                "Birthday" -> {
-                                    //edittext for date picker
-                                    val editText = EditText(context)
-                                    editText.hint = field.hint
-                                    editText.inputType = InputType.TYPE_NULL
-                                    editText.isFocusable = false
-                                    editText.isFocusableInTouchMode = false
-                                    editText.tag = field.field_id
-                                    binding.linearLayout.addView(editText)
+        //click listeners for registration and navigation
+        binding.registerBtn.setOnClickListener { handleRegisterButtonClick(fields) }
+        binding.checkBtn.setOnClickListener { navigateToInputtedFieldsFragment() }
+    }
 
-                                    //click listener to show date picker
-                                    editText.setOnClickListener {
-                                        showDatePickerDialog(editText)
-                                    }
-                                }
+    //displaying fields dynamically, flattening them for easier iteration
+    private fun displayFieldsDynamically(fields: List<List<FieldsFromJson>>) {
+        fields.flatten().filter { it.is_active }.forEach { field ->
+            when (field.field_type) {
+                "input" -> createInputField(field)
+                "chooser" -> createChooserField(field)
+            }
+        }
+    }
+    //ui for "input" type
+    private fun createInputField(field: FieldsFromJson) {
+        val editText = EditText(context)
+        setUpFieldAttributes(editText, field)
+        binding.linearLayout.addView(editText)
+    }
+    //ui for "chooser" type
+    private fun createChooserField(field: FieldsFromJson) {
+        when (field.hint) {
+            "Birthday" -> createDatePickerField(field)
+            "Gender" -> createGenderRadioGroup(field)
+        }
+    }
+    //setting up common field attributes
+    private fun setUpFieldAttributes(editText: EditText, field: FieldsFromJson) {
+        editText.hint = field.hint
+        editText.inputType = getInputType(field.keyboard)
+        editText.tag = field.field_id
+    }
+    //adding onclick listener to edittext to add date selected in showDatePickerDialog
+    private fun createDatePickerField(field: FieldsFromJson) {
+        val editText = EditText(context)
+        setUpFieldAttributes(editText, field)
+        editText.inputType = InputType.TYPE_NULL
+        editText.isFocusable = false
+        editText.isFocusableInTouchMode = false
+        editText.setOnClickListener { showDatePickerDialog(editText) }
+        binding.linearLayout.addView(editText)
+    }
 
-                                "Gender" -> {
-                                    //radiogroup for gender
-                                    val genderRadioGroup = RadioGroup(context)
-                                    genderRadioGroup.tag = field.field_id
-                                    genderRadioGroup.orientation = RadioGroup.HORIZONTAL
+    private fun createGenderRadioGroup(field: FieldsFromJson) {
+        //radiogroup so that only one option is selected at a time
+        val genderRadioGroup = RadioGroup(context)
+        genderRadioGroup.tag = field.field_id
+        genderRadioGroup.orientation = RadioGroup.HORIZONTAL
 
-                                    //male radio button
-                                    val maleRadioButton = RadioButton(context)
-                                    maleRadioButton.id = View.generateViewId()
-                                    maleRadioButton.text = "Male"
-                                    genderRadioGroup.addView(maleRadioButton)
+        //adding radiobuttons for different genders
+        listOf("Male", "Female", "Other").forEach { gender ->
+            val radioButton = RadioButton(context)
+            radioButton.id = View.generateViewId()
+            radioButton.text = gender
+            genderRadioGroup.addView(radioButton)
+        }
 
-                                    //female radio button
-                                    val femaleRadioButton = RadioButton(context)
-                                    femaleRadioButton.id = View.generateViewId()
-                                    femaleRadioButton.text = "Female"
-                                    genderRadioGroup.addView(femaleRadioButton)
+        binding.linearLayout.addView(genderRadioGroup)
+    }
 
-                                    //other gender radio button
-                                    val otherRadioButton = RadioButton(context)
-                                    otherRadioButton.id = View.generateViewId()
-                                    otherRadioButton.text = "Other"
-                                    genderRadioGroup.addView(otherRadioButton)
+    //passing input fields into validation and if it passes adding it to the list in viewmodel
+    private fun handleRegisterButtonClick(fields: List<List<FieldsFromJson>>) {
+        val data = mutableListOf<FieldInputs>()
+        val allFieldsValid = validateRequiredInputFields(fields, data)
 
-                                    binding.linearLayout.addView(genderRadioGroup)
-                                }
-                            }
-                        }
-                    }
+        if (allFieldsValid) {
+            sharedViewModel.fieldInputsContainerList.value =
+                sharedViewModel.fieldInputsContainerList.value.orEmpty() + FieldInputsContainer(data)
+        }
+    }
+    //validation for fields which have required set to true
+    private fun validateRequiredInputFields(
+        fields: List<List<FieldsFromJson>>,
+        data: MutableList<FieldInputs>
+    ): Boolean {
+        // Validate each input field and handle required fields
+        return fields.all { fieldList ->
+            fieldList.all { field ->
+                when (val fieldView = binding.root.findViewWithTag<View>(field.field_id)) {
+                    is EditText -> validateEditText(field, fieldView, data)
+                    is RadioGroup -> true //skipping validation for radiogroup
+                    else -> false
                 }
             }
         }
-
-        //register button click
-        binding.registerBtn.setOnClickListener {
-            val data = mutableListOf<FieldInputs>()
-
-            //validating all input fields
-            val allFieldsValid = fields.all { fieldList ->
-                fieldList.all { field ->
-                    val fieldView = binding.root.findViewWithTag<View>(field.field_id)
-
-                    if (fieldView is EditText) {
-                        val isFieldEmpty = fieldView.text.isEmpty()
-
-                        if (field.required && isFieldEmpty) {
-                            //showing toast if the required field is empty
-                            Toast.makeText(
-                                requireContext(),
-                                "${field.hint} is required",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@all false
-                        } else if (!field.required && isFieldEmpty) {
-                            //skipping not required fields
-                            true
-                        } else {
-                            //adding field input to the data list
-                            data.add(
-                                FieldInputs(
-                                    field.field_id.toString(),
-                                    fieldView.text.toString()
-                                )
-                            )
-                            true
-                        }
-                    } else if (fieldView is RadioGroup) {
-                        val selectedRadioButtonId = fieldView.checkedRadioButtonId
-
-                        if (selectedRadioButtonId != -1) {
-                            //adding selected radio button text to the data list
-                            val selectedRadioButton =
-                                fieldView.findViewById<RadioButton>(selectedRadioButtonId)
-                            data.add(
-                                FieldInputs(
-                                    field.field_id.toString(),
-                                    selectedRadioButton.text.toString()
-                                )
-                            )
-                            true
-                        } else if (field.required) {
-                            //toast to indicate that the field is required
-                            Toast.makeText(
-                                requireContext(),
-                                "${field.hint} is required",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            false
-                        } else {
-                            //skipping not required fields
-                            true
-                        }
-                    } else {
-                        false
-                    }
-                }
-            }
-
-            //updating the sharedviewmodel with field inputs if they are all valid
-            if (allFieldsValid) {
-                val currentList = sharedViewModel.fieldInputsContainerList.value.orEmpty()
-                sharedViewModel.fieldInputsContainerList.value =
-                    currentList + FieldInputsContainer(data)
-            }
+    }
+    //validating edittext fields that have required set to true
+    private fun validateEditText(
+        field: FieldsFromJson,
+        fieldView: EditText,
+        data: MutableList<FieldInputs>
+    ): Boolean {
+        val isFieldEmpty = fieldView.text.isEmpty()
+        return if (field.required && isFieldEmpty) {
+            showToast("${field.hint} is required")
+            false
+        } else if (!field.required && isFieldEmpty) {
+            true
+        } else {
+            data.add(FieldInputs(field.field_id.toString(), fieldView.text.toString()))
+            true
         }
-
-        //button to navigate to new fragment
-        binding.checkBtn.setOnClickListener {
-            findNavController().navigate(R.id.action_fieldsFragment_to_inputtedFieldsFragment)
-        }
+    }
+    //toast for displaying messages
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     //showing date picker dialog
@@ -202,20 +155,20 @@ class FieldsFragment : Fragment() {
             month,
             day
         )
-
         datePickerDialog.show()
     }
 
-    //assigning input type based on the keyboard type
+    //assigning the input type
     private fun getInputType(keyboard: String?): Int {
+        // Determine the input type based on the keyboard type
         return when (keyboard) {
             "number" -> InputType.TYPE_CLASS_NUMBER
             else -> InputType.TYPE_CLASS_TEXT
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    //navigating to the next fragment
+    private fun navigateToInputtedFieldsFragment() {
+        findNavController().navigate(R.id.action_fieldsFragment_to_inputtedFieldsFragment)
     }
 }
