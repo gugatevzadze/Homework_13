@@ -1,8 +1,12 @@
 package com.example.homework_13
 
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.homework_13.databinding.FragmentInputtedFieldsBinding
+import kotlinx.coroutines.launch
 
 //used base fragment
 class InputtedFieldsFragment : BaseFragment<FragmentInputtedFieldsBinding>(FragmentInputtedFieldsBinding::inflate) {
@@ -18,9 +22,13 @@ class InputtedFieldsFragment : BaseFragment<FragmentInputtedFieldsBinding>(Fragm
         binding.recyclerViewContainer.adapter = adapter
         binding.recyclerViewContainer.layoutManager = LinearLayoutManager(requireContext())
 
-        //observing changes in the sharedViewModel
-        sharedViewModel.fieldInputsContainerList.observe(viewLifecycleOwner) { fieldInputsContainerList ->
-            adapter.submitList(fieldInputsContainerList)
+        //observing changes in the sharedViewModel, this time using the collect function
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.fieldInputsContainerListFlow.collect { fieldInputsContainerList ->
+                    adapter.submitList(fieldInputsContainerList)
+                }
+            }
         }
     }
 }

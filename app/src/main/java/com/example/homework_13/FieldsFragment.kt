@@ -95,10 +95,12 @@ class FieldsFragment : BaseFragment<FragmentFieldsBinding>(FragmentFieldsBinding
         val allFieldsValid = validateRequiredInputFields(fields, data)
 
         if (allFieldsValid) {
-            sharedViewModel.fieldInputsContainerList.value =
-                sharedViewModel.fieldInputsContainerList.value.orEmpty() + FieldInputsContainer(data)
+            val currentList = sharedViewModel.fieldInputsContainerListFlow.value.toMutableList()
+            currentList.add(FieldInputsContainer(data))
+            sharedViewModel.updateFieldInputsContainerList(currentList)
         }
     }
+
     //validation for fields which have required set to true
     private fun validateRequiredInputFields(
         fields: List<List<FieldsFromJson>>,

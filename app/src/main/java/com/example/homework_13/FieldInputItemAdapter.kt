@@ -28,7 +28,7 @@ class FieldInputItemAdapter : ListAdapter<FieldInputs, FieldInputItemAdapter.Ite
 
     private class ItemDiffCallback : DiffUtil.ItemCallback<FieldInputs>() {
         override fun areItemsTheSame(oldItem: FieldInputs, newItem: FieldInputs): Boolean {
-            return oldItem == newItem
+            return oldItem.fieldId == newItem.fieldId
         }
 
         override fun areContentsTheSame(oldItem: FieldInputs, newItem: FieldInputs): Boolean {

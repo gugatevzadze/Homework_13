@@ -1,12 +1,19 @@
 package com.example.homework_13
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 //view model for communication between fragments
 class SharedViewModel: ViewModel() {
-    //live data to track changes in the list
-    val fieldInputsContainerList: MutableLiveData<List<FieldInputsContainer>> = MutableLiveData(listOf())
+
+    //changed from using livedata to mutablestateflow
+    private val _fieldInputsContainerList = MutableStateFlow<List<FieldInputsContainer>>(emptyList())
+    val fieldInputsContainerListFlow = _fieldInputsContainerList.asStateFlow()
+
+    fun updateFieldInputsContainerList(newList: List<FieldInputsContainer>) {
+        _fieldInputsContainerList.value = newList
+    }
 }
 
 
